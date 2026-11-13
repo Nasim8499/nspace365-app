@@ -1,0 +1,13 @@
+node_modules
+dist
+.DS_Store
+*.log
+shots
+audit.mjs
+smoke.mjs
+mobile.mjs
+visatest.mjs
+dashtest.mjs
+guardtest.mjs
+guard2.mjs
+dbg*.mjs

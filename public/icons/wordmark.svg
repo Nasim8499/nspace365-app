@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96" width="380" height="96" role="img" aria-label="NsPace">
+  <defs>
+    <linearGradient id="wm" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#007AFF"/>
+      <stop offset="1" stop-color="#5E5CE6"/>
+    </linearGradient>
+  </defs>
+  <text x="4" y="70" font-family="ui-sans-serif, -apple-system, 'SF Pro Display', 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="72" letter-spacing="-3.6" fill="#1d1d1f"><tspan font-weight="700">Ns</tspan><tspan font-weight="400" fill="url(#wm)">Pace</tspan></text>
+  <circle cx="330" cy="62" r="7" fill="#34C759"/>
+</svg>
