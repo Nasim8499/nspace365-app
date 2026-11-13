@@ -1,0 +1,41 @@
+import puppeteer from 'puppeteer-core';
+const URL='https://nspace-six.vercel.app';
+const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+const dir='/tmp/prof-'+Date.now();
+const b=await puppeteer.launch({executablePath:'/usr/bin/google-chrome',headless:'new',args:['--no-sandbox','--user-data-dir='+dir]});
+const p=await b.newPage();
+const errs=[]; p.on('pageerror',e=>errs.push(String(e).slice(0,160)));
+p.on('console',m=>{if(m.type()==='error')errs.push('C:'+m.text().slice(0,160));});
+await p.setViewport({width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});
+await p.goto(URL,{waitUntil:'networkidle0'});
+await wait(800);
+console.log('welc', await p.evaluate(()=>!!document.querySelector('.welc')));
+await p.evaluate(()=>document.querySelector('.welc-skip')?.click());
+await p.waitForSelector('.authcard',{timeout:15000});
+await p.click('[data-testid="auth-fill-admin"]');
+await p.type('[data-testid="auth-password"]','VisaHOBe1323@');
+await p.click('[data-testid="auth-submit"]');
+await p.waitForSelector('.dashstat',{timeout:20000});
+await p.evaluate(()=>{location.hash='#/chat';});
+await wait(1000);
+await p.evaluate(()=>document.querySelector('button[title="New chat"]')?.click());
+await wait(700);
+const convs=await p.evaluate(()=>document.querySelectorAll('button.conv').length);
+console.log('picker conv buttons', convs);
+await p.evaluate(()=>{const i=[...document.querySelectorAll('button.conv')]; i[0]?.click();});
+await wait(1300);
+console.log('after pick hash', await p.evaluate(()=>location.hash), 'textarea', await p.evaluate(()=>document.querySelectorAll('textarea').length));
+const ta=await p.$('textarea');
+if(ta){
+  await ta.click();
+  await p.keyboard.type('Say hello in one line.');
+  await p.keyboard.press('Enter');
+  await wait(2500);
+  console.log('thread text', await p.evaluate(()=>{
+    const sec=document.querySelector('.threadpane')||document.body;
+    return (sec.innerText||'').replace(/\s+/g,' ').slice(0,400);
+  }));
+}
+await p.screenshot({path:'shots/p-chat-after.png'});
+console.log('errors', errs.slice(0,5));
+await b.close();

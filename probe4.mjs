@@ -1,0 +1,36 @@
+import puppeteer from 'puppeteer-core';
+const URL='https://nspace-six.vercel.app';
+const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+const b=await puppeteer.launch({executablePath:'/usr/bin/google-chrome',headless:'new',args:['--no-sandbox','--user-data-dir=/tmp/q'+Date.now()]});
+const p=await b.newPage();
+const errs=[]; p.on('pageerror',e=>errs.push(String(e).slice(0,150)));
+await p.setViewport({width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});
+await p.goto(URL,{waitUntil:'networkidle0'});
+await wait(800);
+await p.evaluate(()=>document.querySelector('.welc-skip')?.click());
+await p.waitForSelector('.authcard');
+await p.click('[data-testid="auth-fill-admin"]');
+await p.type('[data-testid="auth-password"]','VisaHOBe1323@');
+await p.click('[data-testid="auth-submit"]');
+await p.waitForSelector('.dashstat',{timeout:20000});
+await p.evaluate(()=>{location.hash='#/chat';});
+await wait(900);
+await p.evaluate(()=>document.querySelector('button[title="New chat"]')?.click());
+await wait(600);
+await p.evaluate(()=>{document.querySelectorAll('button.conv')[0]?.click();});
+await wait(1200);
+const ta=await p.$('textarea');
+await ta.type('Say hello in one line.');
+await wait(200);
+console.log('value:', await p.evaluate(()=>document.querySelector('textarea')?.value));
+await p.keyboard.press('Enter');
+for(let i=0;i<25;i++){
+  await wait(1000);
+  const n=await p.evaluate(()=>document.querySelectorAll('.msgrow').length);
+  if(n>=2) break;
+}
+console.log('rows', await p.evaluate(()=>document.querySelectorAll('.msgrow').length));
+console.log('text', await p.evaluate(()=>document.querySelector('.threadpane')?.innerText.replace(/\s+/g,' ').slice(0,320)));
+await p.screenshot({path:'shots/p-chat-live.png'});
+console.log('errors', errs.slice(0,3));
+await b.close();
