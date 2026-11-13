@@ -110,6 +110,13 @@ thing any paid API offers; the fallback chain is what removes the "limit reached
 5. Deploy `dist/` to Vercel/Netlify, or wrap with Capacitor for the stores
    (`npx cap add ios` / `android`, then follow the App Store privacy + IAP checklist).
 
+## CI
+
+`ci/github-actions-build.yml` is a ready build workflow (install → typecheck → build → upload dist).
+Copy it to `.github/workflows/build.yml` in your GitHub repo. The connector token that pushed this repo
+has no `workflow` scope, so that one file has to be added from the GitHub web UI (or with a PAT that
+carries `workflow`).
+
 ## Honest limits
 
 * The live-run pane is a faithful, scripted rehearsal of the portal: real field mapping, real

@@ -11,3 +11,4 @@ dashtest.mjs
 guardtest.mjs
 guard2.mjs
 dbg*.mjs
+.vercel
