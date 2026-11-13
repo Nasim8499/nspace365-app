@@ -1,0 +1,15 @@
+import puppeteer from 'puppeteer-core';
+const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+const b=await puppeteer.launch({executablePath:'/usr/bin/google-chrome',headless:'new',args:['--no-sandbox']});
+const p=await b.newPage();
+await p.setViewport({width:1280,height:860,deviceScaleFactor:2});
+await p.goto('https://nspace-six.vercel.app',{waitUntil:'domcontentloaded'});
+await wait(2300);
+await p.screenshot({path:'shots/first-open-desktop.png'});
+const m=await b.newPage();
+await m.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
+await m.goto('https://nspace-six.vercel.app',{waitUntil:'domcontentloaded'});
+await wait(2300);
+await m.screenshot({path:'shots/first-open-mobile.png'});
+console.log('ok');
+await b.close();

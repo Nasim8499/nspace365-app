@@ -1,0 +1,42 @@
+import puppeteer from 'puppeteer-core';
+const URL='https://nspace-six.vercel.app';
+const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+const b=await puppeteer.launch({executablePath:'/usr/bin/google-chrome',headless:'new',args:['--no-sandbox']});
+const p=await b.newPage();
+const errs=[];
+p.on('console',m=>{if(m.type()==='error')errs.push(m.text().slice(0,140));});
+p.on('pageerror',e=>errs.push('PAGEERR '+String(e).slice(0,140)));
+await p.setViewport({width:1280,height:900,deviceScaleFactor:2});
+await p.goto(URL,{waitUntil:'domcontentloaded'});
+await wait(900);
+console.log('welcome?', await p.evaluate(()=>!!document.querySelector('.welc')), 'tiles', await p.evaluate(()=>document.querySelectorAll('.welc-tile').length));
+await p.screenshot({path:'shots/W1-mid.png'});
+await wait(1400);
+await p.screenshot({path:'shots/W2-full.png'});
+await wait(2600);
+const after = await p.evaluate(()=>({welc:!!document.querySelector('.welc'), auth:!!document.querySelector('.authcard')}));
+console.log('after intro', after);
+await p.screenshot({path:'shots/W3-auth.png'});
+// admin login
+await p.type('[data-testid="auth-email"]','visamotion365@gmail.com');
+await p.type('[data-testid="auth-password"]','VisaHOBe1323@');
+await p.click('[data-testid="auth-submit"]');
+await p.waitForSelector('.dashstat',{timeout:20000});
+console.log('admin', await p.evaluate(()=>({h1:document.querySelector('.h1')?.textContent, anim:!!document.querySelector('.page-anim')})));
+await p.screenshot({path:'shots/W4-dash.png'});
+// privacy page renders without login state dependency
+await p.goto(URL+'/privacy',{waitUntil:'networkidle0'});
+console.log('privacy', await p.evaluate(()=>({h1:document.querySelector('.legalcard .h1')?.textContent, sections:document.querySelectorAll('.legalcard section').length})));
+await p.screenshot({path:'shots/W5-privacy.png'});
+await p.goto(URL+'/terms',{waitUntil:'networkidle0'});
+console.log('terms', await p.evaluate(()=>document.querySelector('.legalcard .h1')?.textContent));
+// mobile first open
+const m=await b.newPage();
+await m.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
+await m.goto(URL,{waitUntil:'domcontentloaded'});
+await wait(2200);
+const ov=await m.evaluate(()=>({scrollW:document.documentElement.scrollWidth, inner:innerWidth, card:document.querySelector('.welc-inner')?.getBoundingClientRect().width}));
+console.log('mobile', ov);
+await m.screenshot({path:'shots/W6-mobile.png'});
+console.log('errors',errs.slice(0,4));
+await b.close();

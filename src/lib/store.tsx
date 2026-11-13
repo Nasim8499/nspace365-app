@@ -134,7 +134,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const onHash = () => setRoute(parseHash());
     window.addEventListener('hashchange', onHash);
-    if (!location.hash) location.hash = '#/chat';
+    // keep clean URLs such as /privacy or /terms reachable instead of forcing the chat route
+    const clean = location.pathname.replace(/\/+$/, '');
+    const isPublic = clean === '/privacy' || clean === '/terms';
+    if (!location.hash && !isPublic) location.hash = '#/chat';
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
