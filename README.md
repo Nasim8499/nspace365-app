@@ -16,6 +16,30 @@ npm run build      # dist/ (static, deployable anywhere)
 npm run preview    # serve the production build
 ```
 
+## Run it in Docker (AI agent preview included)
+
+```bash
+npm run docker:up        # build + serve  ->  http://localhost:8080
+npm run docker:dev       # hot-reload dev server  ->  http://localhost:3000
+npm run docker:down      # stop
+
+# optional: local models so the agent preview streams with no API keys
+docker compose --profile local-llm up -d
+docker exec -it nspace-ollama ollama pull llama3.2
+```
+
+* `Dockerfile` — multi-stage: `node:20-alpine` build → `nginx:1.27-alpine` serve, gzip, immutable asset
+  caching, SPA fallback, healthcheck.
+* `docker-compose.yml` — `app` (production image on :8080), `dev` (profile `dev`), `ollama`
+  (profile `local-llm`).
+* The image is the same static build you can push to Vercel/Netlify/Railway or package with Capacitor.
+
+## Agent live preview
+
+Every agent card on `/agents` has **Preview**: a drawer showing its system prompt and the skills wired
+into it, plus a real streaming run through the same model router as chat (stop button, model badge,
+fallback). No keys needed — the on-device engine answers — and with a key it calls the real model.
+
 ## Roles
 
 | Role | Sees | How to sign in |

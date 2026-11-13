@@ -3,6 +3,7 @@ import { useApp } from '../lib/store';
 import Icon from '../components/Icon';
 import { CATEGORIES } from '../lib/seed';
 import { NewAgent } from './Chat';
+import AgentPreview from '../components/AgentPreview';
 
 export default function Agents() {
   const { db, newConversation, addAgent, toast } = useApp();
@@ -10,6 +11,7 @@ export default function Agents() {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('All');
   const [custom, setCustom] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const list = useMemo(
     () =>
@@ -92,6 +94,9 @@ export default function Agents() {
                 <div className="row" style={{ marginTop: 12 }}>
                   <span className="badge">{a.category}</span>
                   <div style={{ flex: 1 }} />
+                  <button className="btn xs ghost" onClick={() => setPreview(a.id)} data-testid="preview-agent">
+                    <Icon name="play" size={11} /> Preview
+                  </button>
                   <button className="btn xs" onClick={() => newConversation(a.id)}>
                     Chat <Icon name="arrowRight" size={12} />
                   </button>
@@ -138,6 +143,14 @@ export default function Agents() {
           </div>
         )}
       </div>
+
+      {preview && db.agents.find((a) => a.id === preview) && (
+        <AgentPreview
+          agent={db.agents.find((a) => a.id === preview)!}
+          onClose={() => setPreview(null)}
+          onChat={() => newConversation(preview)}
+        />
+      )}
 
       {custom && (
         <NewAgent

@@ -1,0 +1,42 @@
+name: nspace
+
+services:
+  # production image: static build served by nginx  ->  http://localhost:8080
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nspace/app:latest
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  # live dev server with hot reload  ->  docker compose --profile dev up
+  dev:
+    profiles: ["dev"]
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0 --port 3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+
+  # optional local models so the agent preview runs with no API keys
+  #   docker compose --profile local-llm up -d
+  #   docker exec -it nspace-ollama-1 ollama pull llama3.2
+  ollama:
+    profiles: ["local-llm"]
+    image: ollama/ollama:latest
+    container_name: nspace-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  ollama:

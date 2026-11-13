@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite --host",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "docker:up": "docker compose up -d --build",
+    "docker:dev": "docker compose --profile dev up",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "react": "^18.3.1",
