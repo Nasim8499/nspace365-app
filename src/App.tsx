@@ -13,10 +13,19 @@ import Download from './pages/Download';
 import Visa from './pages/Visa';
 import Dashboard from './pages/Dashboard';
 import Legal from './pages/Legal';
+import Welcome from './pages/Welcome';
 
 export default function App() {
   const { db, route } = useApp();
   const [, force] = useState(0);
+  // the animated first-open welcome shows once per device, before the sign-in card
+  const [showIntro, setShowIntro] = useState(() => {
+    try {
+      return localStorage.getItem('nspace.intro') !== '1';
+    } catch {
+      return true;
+    }
+  });
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
@@ -32,7 +41,22 @@ export default function App() {
   const first = route.split('/').filter(Boolean)[0];
   if (first === 'privacy' || first === 'terms') return <Legal kind={first} />;
 
-  if (!db.settings.signedIn) return <Auth />;
+  if (!db.settings.signedIn) {
+    return showIntro ? (
+      <Welcome
+        onDone={() => {
+          try {
+            localStorage.setItem('nspace.intro', '1');
+          } catch {
+            /* private mode */
+          }
+          setShowIntro(false);
+        }}
+      />
+    ) : (
+      <Auth />
+    );
+  }
 
   const seg = route.split('/').filter(Boolean);
   const page = seg[0] || 'chat';

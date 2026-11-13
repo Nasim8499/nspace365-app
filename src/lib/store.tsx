@@ -104,7 +104,11 @@ const AppCtx = createContext<Ctx | null>(null);
 
 function parseHash(): string {
   const h = location.hash.replace(/^#/, '');
-  return h || '/chat';
+  if (h) return h;
+  // clean URLs such as /privacy work too (Vercel rewrites them to index.html)
+  const p = location.pathname.replace(/\/+$/, '');
+  if (p && p !== '' && p !== '/index.html') return p;
+  return '/chat';
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {

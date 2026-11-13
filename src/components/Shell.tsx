@@ -85,7 +85,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </button>
       </nav>
 
-      {children}
+      <div className="page-anim" key={route}>
+        {children}
+      </div>
 
       <div className="toasts">
         {toasts.map((t) => (
