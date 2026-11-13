@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../lib/store';
 import Icon from '../components/Icon';
 import { Monogram, Wordmark } from '../components/Logo';
+import { ADMIN_EMAIL, ADMIN_NAME, ADMIN_PASSWORD } from '../lib/seed';
 
 declare global {
   interface Window {
@@ -25,13 +26,22 @@ export default function Auth() {
     const mail = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) return setErr('Enter a valid email address.');
     if (password.length < 4) return setErr('Password needs at least 4 characters.');
-    if (mode === 'admin' && code.trim().toUpperCase() !== (db.settings.adminCode || 'NSPACE-365')) {
+
+    // the built-in agency administrator: always admin, works on any device
+    const isDefaultAdmin = mail === ADMIN_EMAIL && password === ADMIN_PASSWORD;
+    if (mail === ADMIN_EMAIL && !isDefaultAdmin) {
+      return setErr('Wrong password for the agency admin account.');
+    }
+    if (!isDefaultAdmin && mode === 'admin' && code.trim().toUpperCase() !== (db.settings.adminCode || 'NSPACE-365')) {
       return setErr('Agency access code is wrong. Use the code from your agency admin.');
     }
+
     setErr('');
-    signIn(name.trim() || mail.split('@')[0], mail, mode);
+    const role: 'applicant' | 'admin' = isDefaultAdmin ? 'admin' : mode;
+    const ok = signIn(name.trim() || (isDefaultAdmin ? ADMIN_NAME : mail.split('@')[0]), mail, role, password);
+    if (!ok) return setErr('This email already has an account with a different password.');
     navigate('/dashboard');
-    toast(mode === 'admin' ? 'Signed in as agency admin' : 'Signed in as applicant');
+    toast(isDefaultAdmin ? 'Signed in as agency admin' : role === 'admin' ? 'Signed in as agency admin' : 'Signed in as applicant');
   };
 
   // Real Google Identity Services sign-in when a client id is configured.
@@ -45,9 +55,11 @@ export default function Auth() {
         callback: (res: { credential: string }) => {
           try {
             const payload = JSON.parse(atob(res.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-            signIn(payload.name || payload.email, payload.email, db.users.find((u) => u.email === payload.email)?.role);
+            const known = db.users.find((u) => u.email.toLowerCase() === (payload.email || '').toLowerCase());
+            const isAdmin = (payload.email || '').toLowerCase() === ADMIN_EMAIL || known?.role === 'admin';
+            signIn(payload.name || payload.email, payload.email, isAdmin ? 'admin' : 'applicant');
             navigate('/dashboard');
-            toast('Signed in with Google');
+            toast(isAdmin ? 'Signed in with Google as agency admin' : 'Signed in with Google');
           } catch {
             setErr('Google returned a token we could not read.');
           }
@@ -176,7 +188,7 @@ export default function Auth() {
           </span>
           <span className="hint">
             {mode === 'admin'
-              ? `Agency code default: ${db.settings.adminCode || 'NSPACE-365'} (change it in Me → Access).`
+              ? `Admin: ${ADMIN_EMAIL} signs in with the agency password. Agency code for other admins: ${db.settings.adminCode || 'NSPACE-365'}.`
               : 'Applicant accounts only see their own cases and uploads.'}
           </span>
         </div>

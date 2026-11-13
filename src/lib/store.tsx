@@ -22,7 +22,7 @@ import type {
   ModelKey,
   Settings,
 } from '../types';
-import { makeDefaultDB, seedAgents } from './seed';
+import { ADMIN_EMAIL, ADMIN_NAME, GOOGLE_CLIENT_ID, makeDefaultDB, seedAgents } from './seed';
 import { streamChat } from './llm';
 import type { ChatMessage } from './llm';
 import { clip, nextRunFor, uid } from './util';
@@ -35,6 +35,12 @@ function load(): DB {
     if (!raw) return makeDefaultDB();
     const parsed = JSON.parse(raw) as DB;
     if (!parsed.settings || !Array.isArray(parsed.agents)) return makeDefaultDB();
+    // the real Google client id ships with the build; fill it in for older local data
+    if (!parsed.settings.googleClientId) parsed.settings.googleClientId = GOOGLE_CLIENT_ID;
+    parsed.users = parsed.users || [];
+    if (!parsed.users.some((u) => u.email.toLowerCase() === ADMIN_EMAIL)) {
+      parsed.users.unshift({ email: ADMIN_EMAIL, name: ADMIN_NAME, role: 'admin', createdAt: Date.now() });
+    }
     // forward-compatible defaults
     parsed.agents = parsed.agents.length ? parsed.agents : seedAgents;
     parsed.artifacts = parsed.artifacts || [];
@@ -70,7 +76,7 @@ interface Ctx {
   toasts: Toast[];
   toast: (text: string) => void;
   setSettings: (patch: Partial<Settings>) => void;
-  signIn: (name: string, email: string, role?: 'applicant' | 'admin') => void;
+  signIn: (name: string, email: string, role?: 'applicant' | 'admin', pw?: string) => boolean;
   signOut: () => void;
   newConversation: (agentId?: string) => string;
   deleteConversation: (id: string) => void;
@@ -158,13 +164,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setDB((d) => ({ ...d, settings: { ...d.settings, ...patch } }));
   }, []);
 
-  const signIn = useCallback((name: string, email: string, role?: 'applicant' | 'admin') => {
+  const signIn = useCallback((name: string, email: string, role?: 'applicant' | 'admin', pw?: string) => {
+    let ok = true;
     setDB((d) => {
       const existing = d.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+      // a stored password must match before this account can be entered again
+      if (existing?.pw && pw !== undefined && existing.pw !== pw) {
+        ok = false;
+        return d;
+      }
       const nextRole = role || existing?.role || 'applicant';
       const users = existing
-        ? d.users.map((u) => (u.email === existing.email ? { ...u, name, role: nextRole } : u))
-        : [...d.users, { email, name, role: nextRole, createdAt: Date.now() }];
+        ? d.users.map((u) =>
+            u.email === existing.email
+              ? { ...u, name: name || u.name, role: nextRole, pw: pw || u.pw }
+              : u
+          )
+        : [...d.users, { email, name, role: nextRole, createdAt: Date.now(), pw }];
       return {
         ...d,
         users,
@@ -178,6 +194,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         },
       };
     });
+    return ok;
   }, []);
 
   const signOut = useCallback(() => {

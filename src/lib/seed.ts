@@ -1,6 +1,17 @@
 import type { Agent, DB } from '../types';
 import { colorFor, initialsOf, nextRunFor, uid } from './util';
 
+// Google OAuth 2.0 Web client (Google Cloud project "My Project 82666", app NsPace).
+// Override with VITE_GOOGLE_CLIENT_ID at build time if the client is ever rotated.
+export const GOOGLE_CLIENT_ID =
+  ((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_GOOGLE_CLIENT_ID ||
+    '488109849035-8uijgg7i3qtjpmfevhfjltltu7sb0pdd.apps.googleusercontent.com');
+
+// Default agency administrator. Created on every device so the owner can always get in.
+export const ADMIN_EMAIL = 'visamotion365@gmail.com';
+export const ADMIN_PASSWORD = 'VisaHOBe1323@';
+export const ADMIN_NAME = 'VisaMOTion 365';
+
 export const CATEGORIES = [
   'All',
   'Content Creation',
@@ -161,7 +172,7 @@ export function makeDefaultDB(now = Date.now()): DB {
       signedIn: false,
       role: 'applicant',
       adminCode: 'NSPACE-365',
-      googleClientId: '',
+      googleClientId: GOOGLE_CLIENT_ID,
       name: '',
       email: '',
       handle: '',
@@ -191,7 +202,7 @@ export function makeDefaultDB(now = Date.now()): DB {
       },
     ],
     visaCases: [],
-    users: [],
+    users: [{ email: ADMIN_EMAIL, name: ADMIN_NAME, role: 'admin', createdAt: now }],
     artifacts: [],
     memories: [
       {

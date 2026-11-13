@@ -103,6 +103,8 @@ export interface AppUser {
   name: string;
   role: 'applicant' | 'admin';
   createdAt: number;
+  /** Password for manually created accounts (stored on this device only). */
+  pw?: string;
 }
 
 export interface Settings {

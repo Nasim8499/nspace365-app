@@ -12,6 +12,7 @@ import Me from './pages/Me';
 import Download from './pages/Download';
 import Visa from './pages/Visa';
 import Dashboard from './pages/Dashboard';
+import Legal from './pages/Legal';
 
 export default function App() {
   const { db, route } = useApp();
@@ -26,6 +27,10 @@ export default function App() {
     window.addEventListener('beforeinstallprompt', onPrompt);
     return () => window.removeEventListener('beforeinstallprompt', onPrompt);
   }, []);
+
+  // public legal pages: linked from the Google consent screen, so they must open without a login
+  const first = route.split('/').filter(Boolean)[0];
+  if (first === 'privacy' || first === 'terms') return <Legal kind={first} />;
 
   if (!db.settings.signedIn) return <Auth />;
 

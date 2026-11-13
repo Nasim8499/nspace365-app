@@ -2374,3 +2374,27 @@ html[data-theme='dark'] .livescreen { background: #f7f8fa; }
   .profile-head,
   .pagebody > .card:first-child { overflow: hidden; }
 }
+
+/* public legal pages */
+.legalwrap {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 40px 18px 60px;
+}
+.legalcard {
+  width: 100%;
+  max-width: 720px;
+  padding: 30px 30px 26px;
+  border-radius: 26px;
+  height: fit-content;
+}
+.legalhead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+@media (max-width: 520px) {
+  .legalwrap { padding: 22px 12px 40px; }
+  .legalcard { padding: 22px 18px; border-radius: 20px; }
+}
