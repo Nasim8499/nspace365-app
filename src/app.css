@@ -2564,3 +2564,24 @@ html[data-theme='dark'] .livescreen { background: #f7f8fa; }
   .welc-mark, .welc-brand, .welc-cta, .welc-tiles .welc-tile { opacity: 1 !important; transform: none !important; filter: none !important; }
   .page-anim { animation: none; }
 }
+
+/* auth: quick admin fill */
+.authquick {
+  width: 100%;
+  margin: 8px 0 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px dashed rgba(0,122,255,.35);
+  background: rgba(0,122,255,.06);
+  color: #0062cc;
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.authquick:hover { background: rgba(0,122,255,.12); border-color: rgba(0,122,255,.55); }
+.authquick:active { transform: scale(.988); }

@@ -139,6 +139,20 @@ export default function Auth() {
             <Icon name="arrowRight" size={16} /> Continue as {mode === 'admin' ? 'agency admin' : 'applicant'}
           </button>
 
+          <button
+            className="authquick"
+            onClick={() => {
+              setMode('admin');
+              setEmail(ADMIN_EMAIL);
+              setName((n) => n || ADMIN_NAME);
+              setCode(db.settings.adminCode || 'NSPACE-365');
+              setErr('');
+            }}
+            data-testid="auth-fill-admin"
+          >
+            <Icon name="shield" size={13} /> Use the agency admin account
+          </button>
+
           <div className="authdivider"><span>or</span></div>
 
           {db.settings.googleClientId ? (
