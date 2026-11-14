@@ -1267,7 +1267,7 @@ html[data-theme='dark'] .toast {
   display: none;
 }
 
-@media (max-width: 920px) {
+@media (max-width: 700px) {
   .app {
     padding: 0;
     gap: 0;
@@ -2597,7 +2597,7 @@ html[data-theme='dark'] .livescreen { background: #f7f8fa; }
 }
 
 .tabbar { display: none; }
-@media (max-width: 920px) {
+@media (max-width: 700px) {
   .rail { display: none !important; }
   .tabbar {
     display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
@@ -2782,8 +2782,30 @@ html[data-theme='dark'] .livescreen { background: #f7f8fa; }
 .memtag.add { background: none; border: 1px dashed rgba(10,132,255,.35); cursor: pointer; }
 .membody { font-size: 14px; line-height: 1.62; color: var(--ink, #1d1d1f); white-space: pre-wrap; }
 
-@media (max-width: 920px) {
+@media (max-width: 700px) {
   .memwrap { flex-direction: column; height: auto; }
   .memside { flex: 0 0 auto; }
   .memeditor { min-height: 62vh; }
+}
+
+/* ---------------- wide layout fixes: fill the viewport, tablet 3-pane ---------------- */
+.page-anim {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.chatwrap { width: 100%; min-width: 0; }
+.page { width: 100%; min-width: 0; }
+.pagehead { flex-wrap: wrap; row-gap: 8px; }
+.pagehead .search { min-width: 0; }
+.pills { min-width: 0; }
+.teamgrid { grid-template-columns: repeat(auto-fill, minmax(min(268px, 100%), 1fr)); }
+
+@media (min-width: 701px) and (max-width: 1100px) {
+  :root { --list: 252px; }
+  .pagehead { padding: 14px 16px 8px; }
+  .pagebody { padding: 6px 16px 18px; }
+  .teamgrid { grid-template-columns: repeat(auto-fill, minmax(min(232px, 100%), 1fr)); }
+  .automgrid { grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr)); }
 }
