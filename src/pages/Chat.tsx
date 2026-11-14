@@ -4,6 +4,8 @@ import Icon from '../components/Icon';
 import Composer from '../components/Composer';
 import MessageCard from '../components/MessageCard';
 import Modal from '../components/Modal';
+import PlusMenu, { type PlusAction } from '../components/PlusMenu';
+import SkillsSheet from '../components/SkillsSheet';
 import { tierOf } from '../lib/llm';
 import { copyText, fmtDate, relTime } from '../lib/util';
 
@@ -36,6 +38,8 @@ export default function Chat({ convId }: { convId?: string }) {
   const [threadSearch, setThreadSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [newAgent, setNewAgent] = useState(false);
+  const [plusOpen, setPlusOpen] = useState(false);
+  const [skillsOpen, setSkillsOpen] = useState(false);
 
   const bottom = useRef<HTMLDivElement>(null);
   const scrollBox = useRef<HTMLDivElement>(null);
@@ -152,9 +156,64 @@ export default function Chat({ convId }: { convId?: string }) {
     <div className="chatwrap">
       {/* ---------------- conversation list ---------------- */}
       <aside className={`listpane pane glass${conv ? ' hide' : ''}`}>
-        <div className="listhead">
+        <div className="listhead brandhead">
+          <button className="avabtn" onClick={() => navigate('/me')} aria-label="Account">
+            <span className="avatar" style={{ background: 'linear-gradient(135deg,#34C759,#0A84FF)' }}>
+              {(db.settings.name || 'You')
+                .split(/\s+/)
+                .slice(0, 2)
+                .map((w) => w[0])
+                .join('')
+                .toUpperCase() || 'Y'}
+            </span>
+            <span className="badgedot" />
+          </button>
+          <div className="brandmid" onClick={() => navigate('/chat')}>
+            Ns<span>Pace</span>
+            <i className="dot" />
+          </div>
+          <button
+            className="plusgreen"
+            onClick={() => setPlusOpen((v) => !v)}
+            aria-label="Create"
+            aria-expanded={plusOpen}
+          >
+            <Icon name="plus" size={19} strokeWidth={2.2} />
+          </button>
+          <PlusMenu
+            open={plusOpen}
+            onClose={() => setPlusOpen(false)}
+            align="right"
+            onPick={(k: PlusAction) => {
+              if (k === 'agent') navigate('/agents');
+              else if (k === 'artifact') navigate('/artifacts');
+              else if (k === 'automation') navigate('/automations');
+              else if (k === 'credits' || k === 'contact') navigate('/me');
+              else if (k === 'video' || k === 'join') navigate('/studio');
+              else if (k === 'local') {
+                setNewAgent(true);
+                toast('Local agents run entirely on this device');
+              } else {
+                setPicker(true);
+                toast('Pick an agent to start a group chat');
+              }
+            }}
+          />
+        </div>
+
+        <div className="listsearch">
+          <div className="search" style={{ flex: 1 }}>
+            <Icon name="search" size={14} />
+            <input
+              id="conv-search"
+              className="input"
+              placeholder="Search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
           <div style={{ position: 'relative' }}>
-            <button className="pill" onClick={() => setFilterOpen((v) => !v)}>
+            <button className="pill" onClick={() => setFilterOpen((v) => !v)} aria-label="Filter">
               <Icon name="list" size={13} />
               {filter}
               <Icon name="chevronDown" size={12} />
@@ -162,14 +221,7 @@ export default function Chat({ convId }: { convId?: string }) {
             {filterOpen && (
               <div
                 className="card"
-                style={{
-                  position: 'absolute',
-                  top: 40,
-                  left: 0,
-                  zIndex: 30,
-                  padding: 6,
-                  minWidth: 140,
-                }}
+                style={{ position: 'absolute', top: 38, right: 0, zIndex: 30, padding: 6, minWidth: 130 }}
               >
                 {(['All', 'Pinned'] as const).map((f) => (
                   <button
@@ -187,19 +239,6 @@ export default function Chat({ convId }: { convId?: string }) {
               </div>
             )}
           </div>
-          <div className="search" style={{ flex: 1 }}>
-            <Icon name="search" size={14} />
-            <input
-              id="conv-search"
-              className="input"
-              placeholder="Search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-          <button className="iconbtn" title="New chat" onClick={() => setPicker(true)}>
-            <Icon name="plus" size={18} />
-          </button>
         </div>
 
         <div className="convlist scroll">
@@ -365,6 +404,12 @@ export default function Chat({ convId }: { convId?: string }) {
             )}
 
             <div className="thread scroll" ref={scrollBox}>
+              <div className="friendsline">
+                <span className="fl-date">
+                  {conv.createdAt ? fmtDate(conv.createdAt) : 'Today'}
+                </span>
+                <span className="fl-text">You are now friends and can start chatting!</span>
+              </div>
               {visibleMessages.length === 0 && (
                 <div className="empty" style={{ paddingTop: 30 }}>
                   <div className="big">
@@ -414,7 +459,9 @@ export default function Chat({ convId }: { convId?: string }) {
                 setSettings({ agenticMode: !db.settings.agenticMode })
               }
               modelLabel={modelLabel}
+              onSkills={() => setSkillsOpen(true)}
             />
+            <SkillsSheet open={skillsOpen} onClose={() => setSkillsOpen(false)} />
           </>
         )}
       </section>

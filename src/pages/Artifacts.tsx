@@ -8,7 +8,7 @@ const FOLDERS = ['All Work', 'Websites', 'Documents', 'Media', 'Messages', 'Meet
 export default function Artifacts() {
   const { db, navigate, deleteArtifact, updateArtifact, toast } = useApp();
   const [folder, setFolder] = useState('All Work');
-  const [tab, setTab] = useState<'All' | 'Created by me' | 'Saved'>('All');
+  const [tab, setTab] = useState<'All' | 'Created by me' | 'Saved' | 'Memory'>('All');
   const [q, setQ] = useState('');
   const [view, setView] = useState<'grid' | 'list'>('grid');
 
@@ -17,7 +17,14 @@ export default function Artifacts() {
       db.artifacts.filter((a) => {
         const inFolder =
           folder === 'All Work' ? true : a.folder === folder || (folder === 'Automations' && a.tags.includes('automation'));
-        const inTab = tab === 'All' ? true : tab === 'Saved' ? !!a.saved : true;
+        const inTab =
+          tab === 'All'
+            ? true
+            : tab === 'Saved'
+              ? !!a.saved
+              : tab === 'Memory'
+                ? a.tags.includes('memory') || a.folder === 'Messages'
+                : true;
         const inQ = !q || a.title.toLowerCase().includes(q.toLowerCase());
         return inFolder && inTab && inQ;
       }),
@@ -76,7 +83,7 @@ export default function Artifacts() {
       <section className="threadpane pane glass">
         <div className="threadhead">
           <div className="tabs">
-            {(['All', 'Created by me', 'Saved'] as const).map((t) => (
+            {(['All', 'Created by me', 'Saved', 'Memory'] as const).map((t) => (
               <button key={t} className={`tab${tab === t ? ' on' : ''}`} onClick={() => setTab(t)}>
                 {t}
               </button>
@@ -106,8 +113,34 @@ export default function Artifacts() {
                 <Icon name="layers" size={24} />
               </div>
               <div style={{ fontWeight: 650, color: 'var(--ink)' }}>Nothing here yet</div>
-              <div className="hint">
-                Every long agent answer is saved here automatically, versioned as v1, v2…
+              <div className="hint" style={{ maxWidth: 380 }}>
+                Your library starts here. Everything you create or save lands here, versioned v1, v2…
+              </div>
+              <div className="emptycards">
+                <button
+                  className="card emptycard"
+                  onClick={() => navigate('/studio/new')}
+                >
+                  <span className="col" style={{ flex: 1, textAlign: 'left' }}>
+                    <span className="ectitle">Create a cloud document</span>
+                    <span className="hint">Start from a blank page.</span>
+                  </span>
+                  <Icon name="arrowRight" size={16} />
+                </button>
+                <button className="card emptycard" onClick={() => navigate('/discover')}>
+                  <span className="col" style={{ flex: 1, textAlign: 'left' }}>
+                    <span className="ectitle">Build a website with an agent</span>
+                    <span className="hint">Describe it, and an agent builds it.</span>
+                  </span>
+                  <Icon name="arrowRight" size={16} />
+                </button>
+                <button className="card emptycard" onClick={() => navigate('/chat')}>
+                  <span className="col" style={{ flex: 1, textAlign: 'left' }}>
+                    <span className="ectitle">Save a message from a chat</span>
+                    <span className="hint">Open the message menu, then Save to Artifacts.</span>
+                  </span>
+                  <Icon name="arrowRight" size={16} />
+                </button>
               </div>
             </div>
           ) : view === 'grid' ? (

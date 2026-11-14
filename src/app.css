@@ -2585,3 +2585,205 @@ html[data-theme='dark'] .livescreen { background: #f7f8fa; }
 }
 .authquick:hover { background: rgba(0,122,255,.12); border-color: rgba(0,122,255,.55); }
 .authquick:active { transform: scale(.988); }
+
+/* ---------------- reference-parity: shell, plus menu, skills ---------------- */
+.rail-logo, .rail-ava { background: none; border: 0; padding: 0; cursor: pointer; display: grid; place-items: center; }
+.rail-ava { margin-top: 2px; }
+.bellbtn { position: relative; }
+.railbadge {
+  position: absolute; top: 6px; right: 8px; min-width: 16px; height: 16px;
+  border-radius: 9px; background: #FF3B30; color: #fff; font-size: 10px; font-weight: 700;
+  display: grid; place-items: center; padding: 0 4px; line-height: 1;
+}
+
+.tabbar { display: none; }
+@media (max-width: 920px) {
+  .rail { display: none !important; }
+  .tabbar {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    height: calc(60px + env(safe-area-inset-bottom));
+    padding: 6px 8px env(safe-area-inset-bottom);
+    background: rgba(255,255,255,.86);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    border-top: 1px solid rgba(0,0,0,.06);
+  }
+  .tabbtn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; border: 0; background: none; color: var(--muted, #86868b);
+    font-size: 10.5px; font-weight: 550; cursor: pointer; border-radius: 12px;
+  }
+  .tabbtn.on { color: var(--blue, #007AFF); }
+}
+
+/* chat list header */
+.brandhead { position: relative; gap: 10px; }
+.avabtn { position: relative; border: 0; background: none; padding: 0; cursor: pointer; }
+.avabtn .avatar { width: 30px; height: 30px; font-size: 11px; }
+.badgedot {
+  position: absolute; top: -1px; right: -1px; width: 9px; height: 9px; border-radius: 50%;
+  background: #34C759; border: 2px solid #fff; box-sizing: content-box;
+}
+.brandmid {
+  flex: 1; display: flex; align-items: baseline; justify-content: center; gap: 1px;
+  font-size: 15px; font-weight: 750; letter-spacing: -.2px; color: var(--ink, #1d1d1f); cursor: pointer;
+}
+.brandmid span {
+  background: linear-gradient(90deg,#007AFF,#5E5CE6);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.brandmid .dot { width: 5px; height: 5px; border-radius: 50%; background: #34C759; margin-left: 3px; }
+.plusgreen {
+  width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer;
+  background: linear-gradient(135deg,#34C759,#30B0C7); color: #fff;
+  display: grid; place-items: center; box-shadow: 0 4px 12px rgba(52,199,89,.32);
+  transition: transform .16s ease;
+}
+.plusgreen:active { transform: scale(.94); }
+.listsearch { display: flex; align-items: center; gap: 8px; padding: 0 14px 10px; }
+
+.plusmenu {
+  position: absolute; top: 52px; z-index: 70; width: 268px; padding: 6px;
+  border-radius: 18px; background: rgba(255,255,255,.94);
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 24px 60px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.06);
+  animation: plusIn .16s ease both;
+}
+@keyframes plusIn { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+.plusitem {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 9px;
+  border: 0; border-radius: 12px; background: none; cursor: pointer; text-align: left;
+}
+.plusitem:hover { background: rgba(10,132,255,.07); }
+.plusico { width: 27px; height: 27px; border-radius: 9px; display: grid; place-items: center; flex: 0 0 auto; }
+.pluslabel { font-size: 13.5px; font-weight: 520; color: var(--ink, #1d1d1f); }
+
+/* thread intro */
+.friendsline {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 14px 0 6px; text-align: center;
+}
+.fl-date { font-size: 11.5px; color: var(--muted, #86868b); font-weight: 550; }
+.fl-text { font-size: 12.5px; color: var(--muted, #86868b); }
+
+/* skills sheet */
+.sheetwrap {
+  position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 12vh; background: rgba(0,0,0,.14); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.skillssheet {
+  width: min(560px, 94vw); max-height: 68vh; display: flex; flex-direction: column;
+  border-radius: 20px; background: rgba(255,255,255,.96);
+  border: 1px solid rgba(0,0,0,.06); box-shadow: 0 30px 80px rgba(0,0,0,.22);
+  padding: 12px 0 6px; animation: plusIn .18s ease both;
+}
+.skillshead { display: flex; align-items: center; gap: 8px; padding: 0 12px 10px; }
+.skillslist { overflow-y: auto; padding: 0 8px 8px; }
+.skillrow {
+  width: 100%; display: flex; align-items: flex-start; gap: 10px; padding: 9px;
+  border: 0; border-radius: 12px; background: none; cursor: pointer;
+}
+.skillrow:hover { background: rgba(10,132,255,.06); }
+.skillico {
+  width: 28px; height: 28px; border-radius: 9px; flex: 0 0 auto; display: grid; place-items: center;
+  background: var(--grad-soft, #eef4ff); color: var(--blue, #007AFF);
+}
+.skillname { font-size: 13.5px; font-weight: 600; color: var(--ink, #1d1d1f); }
+.skilldesc {
+  font-size: 11.5px; color: var(--muted, #86868b); line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.builtin {
+  font-size: 10.5px; font-weight: 600; color: var(--muted, #86868b);
+  border: 1px solid rgba(0,0,0,.08); border-radius: 999px; padding: 2px 7px; flex: 0 0 auto;
+}
+
+/* discover teams */
+.pills { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.pills::-webkit-scrollbar { display: none; }
+.pill.on { background: rgba(10,132,255,.14); color: var(--blue, #007AFF); border-color: transparent; }
+.teamgrid {
+  display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+}
+.teamcard { display: flex; flex-direction: column; gap: 9px; padding: 14px; min-height: 168px; }
+.teamico {
+  width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; flex: 0 0 auto;
+  background: var(--grad-soft, #eef4ff); color: var(--blue, #007AFF);
+}
+.teamcat {
+  font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted, #86868b);
+}
+.teamname { font-size: 14px; font-weight: 650; color: var(--ink, #1d1d1f); line-height: 1.25; }
+.teamdesc { font-size: 12px; color: var(--muted, #86868b); line-height: 1.4; }
+.teamavas { display: flex; align-items: center; }
+.teamava {
+  width: 22px; height: 22px; border-radius: 50%; margin-left: -6px; border: 2px solid #fff;
+  background: linear-gradient(135deg,#0A84FF,#5E5CE6); color: #fff; font-size: 9.5px; font-weight: 700;
+  display: grid; place-items: center;
+}
+.teamava:first-child { margin-left: 0; }
+.teamava.more { background: #f2f2f7; color: #6e6e73; }
+
+/* automations template grid */
+.automgrid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(214px, 1fr)); }
+.autocard {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  padding: 13px; text-align: left; cursor: pointer; border: 1px solid rgba(0,0,0,.05);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.autocard:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(0,0,0,.1); }
+.autoico {
+  width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--grad-soft, #eef4ff); color: var(--blue, #007AFF);
+}
+.autotitle { font-size: 13px; font-weight: 620; color: var(--ink, #1d1d1f); }
+.autodesc { font-size: 11.5px; line-height: 1.4; color: var(--muted, #86868b); }
+
+/* artifacts empty-state action cards */
+.emptycards { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; width: min(420px, 92vw); }
+.emptycard {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer;
+  text-align: left; border: 1px solid rgba(0,0,0,.05); transition: transform .16s ease, box-shadow .16s ease;
+}
+.emptycard:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(0,0,0,.08); }
+.ectitle { font-size: 13px; font-weight: 620; color: var(--ink, #1d1d1f); }
+
+/* memory workspace */
+.memwrap { height: 100%; }
+.memside { flex: 0 0 268px; display: flex; flex-direction: column; min-height: 0; }
+.memhead { display: flex; align-items: center; gap: 8px; padding: 14px 14px 10px; }
+.memfilters { display: flex; gap: 6px; padding: 0 12px 8px; }
+.memnav { display: flex; flex-direction: column; gap: 1px; padding: 0 8px 8px; }
+.memnavitem {
+  display: flex; align-items: center; gap: 9px; padding: 7px 9px; border: 0; border-radius: 10px;
+  background: none; color: var(--ink, #1d1d1f); font-size: 12.5px; font-weight: 520;
+  cursor: pointer; text-align: left;
+}
+.memnavitem:hover { background: rgba(10,132,255,.06); }
+.memnavitem.on { background: rgba(10,132,255,.12); color: var(--blue, #007AFF); font-weight: 600; }
+.memtoggle { display: flex; align-items: center; gap: 10px; margin: 8px 12px 12px; padding: 10px; cursor: pointer; }
+.memeditor { display: flex; flex-direction: column; min-width: 0; }
+.memedithead { display: flex; align-items: center; gap: 6px; padding: 12px 16px; border-bottom: 1px solid rgba(0,0,0,.06); flex-wrap: nowrap; }
+.memtoolbar {
+  display: flex; align-items: center; gap: 4px; padding: 8px 14px;
+  border-bottom: 1px solid rgba(0,0,0,.05);
+}
+.membtn {
+  min-width: 27px; height: 26px; border-radius: 8px; border: 0; background: none;
+  color: var(--ink, #1d1d1f); font-size: 12px; font-weight: 650; cursor: pointer;
+}
+.membtn:hover { background: rgba(0,0,0,.05); }
+.memtagrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.memtag {
+  font-size: 11px; font-weight: 600; color: var(--blue, #007AFF);
+  background: rgba(10,132,255,.1); border: 0; border-radius: 999px; padding: 3px 9px;
+}
+.memtag.add { background: none; border: 1px dashed rgba(10,132,255,.35); cursor: pointer; }
+.membody { font-size: 14px; line-height: 1.62; color: var(--ink, #1d1d1f); white-space: pre-wrap; }
+
+@media (max-width: 920px) {
+  .memwrap { flex-direction: column; height: auto; }
+  .memside { flex: 0 0 auto; }
+  .memeditor { min-height: 62vh; }
+}

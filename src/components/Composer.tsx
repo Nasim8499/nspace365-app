@@ -13,6 +13,7 @@ export default function Composer({
   agentic,
   onToggleAgentic,
   modelLabel,
+  onSkills,
 }: {
   onSend: (text: string, attachments: Attachment[]) => void;
   onStop: () => void;
@@ -20,6 +21,7 @@ export default function Composer({
   agentic: boolean;
   onToggleAgentic: () => void;
   modelLabel: string;
+  onSkills?: () => void;
 }) {
   const [text, setText] = useState('');
   const [files, setFiles] = useState<Attachment[]>([]);
@@ -151,6 +153,12 @@ export default function Composer({
               e.target.value = '';
             }}
           />
+          <button className="iconbtn" title="Skills" onClick={onSkills}>
+            <Icon name="wrench" size={16} />
+          </button>
+          <button className="iconbtn" title="Skills library" onClick={onSkills}>
+            <Icon name="puzzle" size={16} />
+          </button>
           <button
             className={`modechip${agentic ? '' : ''}`}
             onClick={onToggleAgentic}

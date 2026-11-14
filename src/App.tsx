@@ -5,6 +5,7 @@ import Auth from './pages/Auth';
 import Chat from './pages/Chat';
 import Agents from './pages/Agents';
 import Automations from './pages/Automations';
+import Discover from './pages/Discover';
 import Artifacts from './pages/Artifacts';
 import Studio from './pages/Studio';
 import Memory from './pages/Memory';
@@ -65,6 +66,7 @@ export default function App() {
   if (page === 'chat') body = <Chat convId={seg[1]} />;
   else if (page === 'agents') body = <Agents />;
   else if (page === 'automations') body = <Automations />;
+  else if (page === 'discover') body = <Discover />;
   else if (page === 'artifacts') body = <Artifacts />;
   else if (page === 'studio') body = <Studio id={seg[1] || 'new'} />;
   else if (page === 'memory') body = <Memory />;

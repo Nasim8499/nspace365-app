@@ -5,6 +5,21 @@ import Modal from '../components/Modal';
 import { cadenceLabel, fmtDateTime, relTime } from '../lib/util';
 import type { Cadence } from '../types';
 
+const TEMPLATES: { title: string; icon: string; desc: string; prompt: string; cadence: Cadence }[] = [
+  { title: 'Meeting reminder + prep', icon: 'bell', desc: 'Briefs you before every meeting with notes and open items.', prompt: 'Prepare a meeting brief: context, open items and the three questions I should ask.', cadence: 'daily' },
+  { title: 'Daily work brief', icon: 'doc', desc: 'One morning brief across chats, files and deadlines.', prompt: 'Write my daily work brief from open chats, automations and visa cases.', cadence: 'daily' },
+  { title: 'Competitor / industry monitor', icon: 'globe', desc: 'Watches the market and flags what actually changed.', prompt: 'Scan competitor and industry news, then flag anything that changes my plan.', cadence: 'daily' },
+  { title: 'Expert group research', icon: 'search', desc: 'Runs a panel-style research pass with sources.', prompt: 'Research this topic as a panel of experts and return a sourced summary.', cadence: 'weekly' },
+  { title: 'Make a deck / report', icon: 'layers', desc: 'Turns the latest findings into a deck outline.', prompt: 'Build a slide deck outline with a clear storyline from the newest findings.', cadence: 'weekly' },
+  { title: 'Build a webpage / tool', icon: 'browser', desc: 'Drafts a page or internal tool from a description.', prompt: 'Draft a single-page website and an internal tool spec for this task.', cadence: 'weekly' },
+  { title: 'Break down & assign tasks', icon: 'list', desc: 'Splits a goal into owners and deadlines.', prompt: 'Break the goal into tasks with owners, effort and deadlines.', cadence: 'weekly' },
+  { title: 'Reply in my voice', icon: 'edit', desc: 'Drafts replies that sound like you, ready to send.', prompt: 'Draft replies in my voice for the messages waiting on me today.', cadence: 'daily' },
+  { title: 'Investment / market research', icon: 'star', desc: 'Tracks a watchlist with a weekly verdict.', prompt: 'Research my watchlist and return a verdict with risks and sources.', cadence: 'weekly' },
+  { title: 'Drive a goal (deck, launch…)', icon: 'compass', desc: 'Keeps one long goal moving with weekly checkpoints.', prompt: 'Advance my long-running goal: report progress, blockers and the next move.', cadence: 'weekly' },
+  { title: 'Inbox triage & follow-ups', icon: 'send', desc: 'Sorts what matters and drafts the follow-ups.', prompt: 'Triage my inbox: what needs an answer, what can wait, what to file.', cadence: 'daily' },
+  { title: 'Cross-timezone relay', icon: 'clock', desc: 'Hands the work to the next timezone cleanly.', prompt: 'Write a handoff note for the next timezone: state, decisions and next steps.', cadence: 'daily' },
+];
+
 export default function Automations() {
   const { db, addAutomation, updateAutomation, deleteAutomation, runAutomation, toast, navigate, runLog } =
     useApp();
@@ -47,6 +62,49 @@ export default function Automations() {
             </button>
           ))}
         </div>
+
+        {tab !== 'My Automations' || !list.length ? (
+          <div style={{ marginBottom: 18 }}>
+            <div className="h2" style={{ fontSize: 14, marginBottom: 8 }}>
+              Start from a template
+            </div>
+            <div className="automgrid">
+              {TEMPLATES.filter((t) =>
+                !q ? true : t.title.toLowerCase().includes(q.toLowerCase())
+              ).map((t) => (
+                <button
+                  className="card autocard"
+                  key={t.title}
+                  onClick={() => {
+                    const agent = db.agents[0];
+                    if (!agent) {
+                      toast('Create an agent first');
+                      navigate('/agents');
+                      return;
+                    }
+                    addAutomation({
+                      title: t.title,
+                      agentId: agent.id,
+                      prompt: t.prompt,
+                      cadence: t.cadence,
+                      hour: 9,
+                      minute: 0,
+                      weekday: 1,
+                      enabled: true,
+                    });
+                    toast(`“${t.title}” scheduled with ${agent.name}`);
+                  }}
+                >
+                  <span className="autoico">
+                    <Icon name={t.icon} size={16} />
+                  </span>
+                  <span className="autotitle">{t.title}</span>
+                  <span className="autodesc">{t.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="col" style={{ gap: 9 }}>
           {list.map((a) => {
