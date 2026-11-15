@@ -1,0 +1,20 @@
+import puppeteer from 'puppeteer-core';
+const URL='https://nspace-six.vercel.app';
+const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+const b=await puppeteer.launch({executablePath:'/usr/bin/google-chrome',headless:'new',args:['--no-sandbox','--user-data-dir=/tmp/p'+Date.now()]});
+const p=await b.newPage();
+await p.setViewport({width:1200,height:900});
+await p.goto(URL,{waitUntil:'networkidle0'}); await wait(600);
+await p.evaluate(()=>document.querySelector('.welc-skip')?.click()); await wait(300);
+await p.click('[data-testid=auth-tab-signup]'); await wait(200);
+await p.type('[data-testid=auth-name]','Replay Test'); await p.type('[data-testid=auth-email]','replay@nspaces.studio'); await p.type('[data-testid=auth-password]','Replay123');
+await p.click('[data-testid=auth-submit]'); await wait(700);
+const href=await p.$eval('[data-testid=verify-open]',a=>a.getAttribute('href'));
+await p.evaluate(h=>{location.hash=h.replace(/^#/,'');},href); await wait(1000);
+await p.waitForFunction(()=>!!document.querySelector('.dashstat'),{timeout:8000}).catch(()=>{});
+// force signed-out state, then replay the same link
+await p.evaluate(()=>{const k='nspace.db.v3';const d=JSON.parse(localStorage.getItem(k));d.settings.signedIn=false;localStorage.setItem(k,JSON.stringify(d));});
+await p.evaluate(h=>{location.hash=h.replace(/^#/,'');location.reload();},href); await wait(2500);
+const txt=await p.evaluate(()=>document.body.innerText);
+console.log('replay blocked:', /already been used|not valid|could not find/.test(txt), '| auth form visible:', /Sign in|Create account/.test(txt));
+await b.close();
