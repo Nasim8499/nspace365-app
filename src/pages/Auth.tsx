@@ -39,20 +39,20 @@ export default function Auth() {
   const [sentToken, setSentToken] = useState('');
   const gbtn = useRef<HTMLDivElement>(null);
 
-  // the verification link comes back as #/verify?e=email&t=token
-  useEffect(() => {
-    const link = readVerifyHash();
-    if (!link) return;
-    const result = verifyEmail(link.email, link.token);
+  // the verification link comes back as #/verify?e=email&t=token (works on load and on later hash changes)
+  const runVerify = React.useCallback(() => {
+    const found = readVerifyHash();
+    if (!found) return;
+    const result = verifyEmail(found.email, found.token);
     if (result === 'ok') {
       setStage('verified');
-      setSentTo(link.email);
+      setSentTo(found.email);
       toast('Email verified — welcome in');
-      const t = setTimeout(() => navigate('/dashboard'), 1500);
-      return () => clearTimeout(t);
+      window.setTimeout(() => navigate('/dashboard'), 1500);
+      return;
     }
     setStage('badlink');
-    setEmail(link.email);
+    setEmail(found.email);
     setErr(
       result === 'used'
         ? 'That link has already been used. Sign in with your password instead.'
@@ -60,7 +60,13 @@ export default function Auth() {
         ? 'We could not find an account for that address on this device. Sign up again to get a fresh link.'
         : 'That verification link is not valid any more.'
     );
-  }, []);
+  }, [navigate, toast, verifyEmail]);
+
+  useEffect(() => {
+    runVerify();
+    window.addEventListener('hashchange', runVerify);
+    return () => window.removeEventListener('hashchange', runVerify);
+  }, [runVerify]);
 
   const openMailbox = (mail: string, token: string) => {
     setSentTo(mail);

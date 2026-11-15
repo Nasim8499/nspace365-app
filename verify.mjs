@@ -1,42 +1,32 @@
 import puppeteer from 'puppeteer-core';
 const URL='https://nspace-six.vercel.app';
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
-const b=await puppeteer.launch({executablePath:'/usr/bin/google-chrome',headless:'new',args:['--no-sandbox']});
-const p=await b.newPage();
-const errs=[];
-p.on('console',m=>{if(m.type()==='error')errs.push(m.text().slice(0,140));});
-p.on('pageerror',e=>errs.push('PAGEERR '+String(e).slice(0,140)));
-await p.setViewport({width:1280,height:900,deviceScaleFactor:2});
-await p.goto(URL,{waitUntil:'domcontentloaded'});
+const b=await puppeteer.launch({executablePath:'/usr/bin/google-chrome',headless:'new',args:['--no-sandbox','--user-data-dir=/tmp/v'+Date.now()]});
+const p=await b.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(String(e).slice(0,140)));
+await p.setViewport({width:1440,height:960,deviceScaleFactor:1.4,isMobile:false});
+await p.goto(URL,{waitUntil:'networkidle0'}); await wait(700);
+await p.evaluate(()=>document.querySelector('.welc-skip')?.click()); await wait(400);
+await p.screenshot({path:'shots/v1-auth.png'});
+await p.click('[data-testid=auth-tab-signup]'); await wait(300);
+await p.type('[data-testid=auth-name]','Test Applicant');
+await p.type('[data-testid=auth-email]','verify.test@nspaces.studio');
+await p.type('[data-testid=auth-password]','TestPass123');
+await p.click('[data-testid=auth-submit]'); await wait(900);
+const inbox = await p.evaluate(()=>document.body.innerText.includes('Check your inbox'));
+await p.screenshot({path:'shots/v2-inbox.png'});
+const href = await p.$eval('[data-testid=verify-open]',a=>a.getAttribute('href')).catch(()=>null);
+if (href){ await p.evaluate(h=>{location.hash=h.replace(/^#/,'');},href); }
 await wait(900);
-console.log('welcome?', await p.evaluate(()=>!!document.querySelector('.welc')), 'tiles', await p.evaluate(()=>document.querySelectorAll('.welc-tile').length));
-await p.screenshot({path:'shots/W1-mid.png'});
-await wait(1400);
-await p.screenshot({path:'shots/W2-full.png'});
-await wait(2600);
-const after = await p.evaluate(()=>({welc:!!document.querySelector('.welc'), auth:!!document.querySelector('.authcard')}));
-console.log('after intro', after);
-await p.screenshot({path:'shots/W3-auth.png'});
-// admin login
-await p.type('[data-testid="auth-email"]','visamotion365@gmail.com');
-await p.type('[data-testid="auth-password"]','VisaHOBe1323@');
-await p.click('[data-testid="auth-submit"]');
-await p.waitForSelector('.dashstat',{timeout:20000});
-console.log('admin', await p.evaluate(()=>({h1:document.querySelector('.h1')?.textContent, anim:!!document.querySelector('.page-anim')})));
-await p.screenshot({path:'shots/W4-dash.png'});
-// privacy page renders without login state dependency
-await p.goto(URL+'/privacy',{waitUntil:'networkidle0'});
-console.log('privacy', await p.evaluate(()=>({h1:document.querySelector('.legalcard .h1')?.textContent, sections:document.querySelectorAll('.legalcard section').length})));
-await p.screenshot({path:'shots/W5-privacy.png'});
-await p.goto(URL+'/terms',{waitUntil:'networkidle0'});
-console.log('terms', await p.evaluate(()=>document.querySelector('.legalcard .h1')?.textContent));
-// mobile first open
-const m=await b.newPage();
-await m.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
-await m.goto(URL,{waitUntil:'domcontentloaded'});
+const verified = await p.evaluate(()=>document.body.innerText.includes('Email verified'));
+await p.screenshot({path:'shots/v3-verified.png'});
 await wait(2200);
-const ov=await m.evaluate(()=>({scrollW:document.documentElement.scrollWidth, inner:innerWidth, card:document.querySelector('.welc-inner')?.getBoundingClientRect().width}));
-console.log('mobile', ov);
-await m.screenshot({path:'shots/W6-mobile.png'});
-console.log('errors',errs.slice(0,4));
+const inApp = await p.evaluate(()=>!!document.querySelector('.dashstat'));
+// reused link
+const p2=await b.newPage(); await p2.goto(URL,{waitUntil:'networkidle0'}); await wait(900);
+await p2.evaluate(h=>{location.hash='#/chat';},null); await wait(200);
+// sign out then re-signin with password
+await p.evaluate(()=>{location.hash='#/me';}); await wait(900);
+const signed = await p.evaluate(()=>document.body.innerText.includes('Sign out')||document.body.innerText.includes('Log out')||document.body.innerText.includes('Account'));
+console.log('inbox',inbox,'verified',verified,'reachedApp',inApp,'hasHref',!!href,'profile',signed);
+console.log('errors',errs.slice(0,3));
 await b.close();
