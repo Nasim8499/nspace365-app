@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// NsPaces Studio: every record is private to the account that wrote it.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      // conversations, artifacts, memories, visaCases, automations
+      match /{collection}/{docId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // nothing else is readable or writable from the client
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

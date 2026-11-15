@@ -125,3 +125,42 @@ carries `workflow`).
   applicant's portal credentials — that is a deployment task, not a browser one.
 * Portal fees, processing times and forms change; each dossier footer says to re-verify.
 * Google sign-in requires your own OAuth client ID; the button explains how to add it.
+
+## Firebase backend (Auth + Firestore)
+
+The app runs on Firebase Authentication and Cloud Firestore when a web-app config is
+present, and falls back to its local-first store when it is not.
+
+- **Project:** `proud-structure-514302-s2`
+- **Auth:** email/password (with verification email) and Google sign-in
+- **Firestore layout:** `users/{uid}` profile plus `conversations`, `artifacts`, `memories`,
+  `visaCases` and `automations` subcollections, locked to their owner by `firestore.rules`
+
+### Configure
+
+Copy `.env.example` to `.env` and fill in the web-app values from
+Firebase console → Project settings → Your apps → Web app → SDK setup:
+
+```
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=proud-structure-514302-s2.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=proud-structure-514302-s2
+VITE_FIREBASE_STORAGE_BUCKET=proud-structure-514302-s2.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+```
+
+On Firebase Hosting the config is also picked up from the reserved
+`/__/firebase/init.json`, so a hosted build needs no `.env` values at all.
+
+### Deploy
+
+```bash
+npm run build
+npx firebase-tools deploy --only hosting,firestore:rules,auth
+```
+
+`firebase.json` carries the hosting rewrites, the Firestore rules target and the auth
+provider block (email/password + Google). Add every serving domain under
+Authentication → Settings → Authorized domains (`localhost`, `*.web.app`,
+`nspace-six.vercel.app`).

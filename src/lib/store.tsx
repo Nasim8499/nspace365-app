@@ -27,6 +27,8 @@ import { ADMIN_EMAIL, ADMIN_NAME, GOOGLE_CLIENT_ID, makeDefaultDB, seedAgents } 
 import { streamChat } from './llm';
 import type { ChatMessage } from './llm';
 import { clip, nextRunFor, uid } from './util';
+import { fbSignOutNow, fbWatch } from './fbauth';
+import { mergeById, pullUserData, pushProfile, schedulePush, startLiveSync } from './fbdata';
 
 const KEY = 'nspace.db.v3';
 
@@ -294,8 +296,85 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(() => {
     setDB((d) => ({ ...d, settings: { ...d.settings, signedIn: false } }));
+    void fbSignOutNow();
     location.hash = '#/chat';
   }, []);
+
+  // ---- Firebase ------------------------------------------------------------
+  // Adopt a persisted Firebase session on load, open the local session for it,
+  // then keep this account mirrored to Firestore in both directions.
+  const fbUid = useRef<string>('');
+  const fbSlices = ['conversations', 'artifacts', 'memories', 'visaCases', 'automations'] as const;
+
+  useEffect(() => {
+    let stopLive: (() => void) | undefined;
+    const stopAuth = fbWatch((acc) => {
+      if (!acc) {
+        fbUid.current = '';
+        stopLive?.();
+        stopLive = undefined;
+        return;
+      }
+      fbUid.current = acc.uid;
+      if (!dbRef.current.settings.signedIn) signIn(acc.name, acc.email, acc.role);
+
+      void pullUserData(acc.uid).then((remote) => {
+        if (!remote) return;
+        setDB((d) => {
+          const next: DB = { ...d };
+          fbSlices.forEach((slice) => {
+            const rows = (remote as Record<string, unknown>)[slice];
+            if (Array.isArray(rows) && rows.length) {
+              const local = ((d as unknown as Record<string, unknown>)[slice] as { id: string }[]) || [];
+              (next as unknown as Record<string, unknown>)[slice] = mergeById(local, rows as { id: string }[]);
+            }
+          });
+          return next;
+        });
+        setRunLog((l) => ['Loaded this account from Firestore', ...l].slice(0, 60));
+      });
+
+      stopLive?.();
+      stopLive = startLiveSync(acc.uid, (patch) => {
+        setDB((d) => {
+          const next: DB = { ...d };
+          fbSlices.forEach((slice) => {
+            const rows = (patch as Record<string, unknown>)[slice];
+            if (Array.isArray(rows) && rows.length) {
+              const local = ((d as unknown as Record<string, unknown>)[slice] as { id: string }[]) || [];
+              (next as unknown as Record<string, unknown>)[slice] = mergeById(local, rows as { id: string }[]);
+            }
+          });
+          return next;
+        });
+      });
+    });
+    return () => {
+      stopAuth();
+      stopLive?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signIn]);
+
+  // local change -> Firestore (debounced inside schedulePush)
+  useEffect(() => {
+    if (!fbUid.current || !db.settings.signedIn) return;
+    schedulePush(fbUid.current, db);
+  }, [db]);
+
+  // profile fields live in their own document
+  useEffect(() => {
+    if (!fbUid.current || !db.settings.signedIn) return;
+    void pushProfile(fbUid.current, {
+      name: db.settings.name,
+      email: db.settings.email,
+      role: db.settings.role,
+      handle: db.settings.handle,
+      theme: db.settings.theme,
+      defaultModel: db.settings.defaultModel,
+    });
+  }, [db.settings.name, db.settings.email, db.settings.role, db.settings.handle, db.settings.theme, db.settings.defaultModel, db.settings.signedIn]);
+
 
   const newConversation = useCallback((agentId?: string) => {
     const d = dbRef.current;

@@ -3,6 +3,8 @@ import { useApp } from '../lib/store';
 import Icon from '../components/Icon';
 import { Monogram, Wordmark } from '../components/Logo';
 import { ADMIN_EMAIL, ADMIN_NAME, ADMIN_PASSWORD } from '../lib/seed';
+import { fbError, fbGoogle, fbSignIn, fbSignUp } from '../lib/fbauth';
+import { firebaseConfigured } from '../lib/firebase';
 
 declare global {
   interface Window {
@@ -37,6 +39,9 @@ export default function Auth() {
   const [stage, setStage] = useState<Stage>(() => (readVerifyHash() ? 'badlink' : 'form'));
   const [sentTo, setSentTo] = useState('');
   const [sentToken, setSentToken] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [fbMail, setFbMail] = useState(false);
+  const fbOn = firebaseConfigured();
   const gbtn = useRef<HTMLDivElement>(null);
 
   // the verification link comes back as #/verify?e=email&t=token (works on load and on later hash changes)
@@ -74,7 +79,7 @@ export default function Auth() {
     setStage('sent');
   };
 
-  const submit = () => {
+  const submit = async () => {
     const mail = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) return setErr('Enter a valid email address.');
     if (password.length < 4) return setErr('Password needs at least 4 characters.');
@@ -88,6 +93,35 @@ export default function Auth() {
       return setErr('Agency access code is wrong. Use the code from your agency admin.');
     }
     setErr('');
+
+    // Firebase Authentication is the source of truth whenever it is configured
+    if (fbOn) {
+      setBusy(true);
+      try {
+        if (tab === 'signup') {
+          if (!name.trim()) return setErr('Add your name so we know who this account belongs to.');
+          const acc = await fbSignUp(name.trim(), mail, password);
+          signIn(acc.name, acc.email, mode);
+          setFbMail(true);
+          setSentTo(acc.email);
+          setSentToken('');
+          setStage('sent');
+          toast('Account created — check your inbox to verify');
+          return;
+        }
+        const acc = await fbSignIn(mail, password);
+        signIn(acc.name, acc.email, isDefaultAdmin ? 'admin' : acc.role);
+        if (!acc.verified) toast('Signed in — verify your email from your inbox');
+        navigate('/dashboard');
+        toast(isDefaultAdmin || acc.role === 'admin' ? 'Signed in as agency admin' : 'Signed in as applicant');
+        return;
+      } catch (e) {
+        setErr(fbError(e));
+        return;
+      } finally {
+        setBusy(false);
+      }
+    }
 
     if (tab === 'signup') {
       if (!name.trim()) return setErr('Add your name so we know who this account belongs to.');
@@ -167,6 +201,36 @@ export default function Auth() {
           </p>
           <div className="loadbar">
             <span />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'sent' && fbMail) {
+    return (
+      <div className="authwrap">
+        <div className="aurora" aria-hidden="true" />
+        <div className="glass authcard popin">
+          <Monogram size={56} />
+          <h2 className="authtitle">Verify your email</h2>
+          <p className="sub" style={{ margin: 0 }}>
+            Firebase sent a verification link to <b>{sentTo}</b>. Open it, then come back and sign in. Your account
+            already exists, so nothing is lost if you close this screen.
+          </p>
+          <button
+            className="btn dark block"
+            style={{ height: 44, marginTop: 12 }}
+            onClick={() => {
+              setStage('form');
+              setTab('signin');
+              setErr('');
+            }}
+          >
+            <Icon name="arrowRight" size={16} /> Back to sign in
+          </button>
+          <div className="hint" style={{ textAlign: 'center', marginTop: 8 }}>
+            Signed in with Firebase Authentication · {sentTo}
           </div>
         </div>
       </div>
@@ -317,9 +381,19 @@ export default function Auth() {
             />
           )}
           {err && <div className="autherr">{err}</div>}
-          <button className="btn dark block" onClick={submit} style={{ height: 44 }} data-testid="auth-submit">
+          <button
+            className="btn dark block"
+            onClick={() => void submit()}
+            disabled={busy}
+            style={{ height: 44 }}
+            data-testid="auth-submit"
+          >
             <Icon name="arrowRight" size={16} />
-            {tab === 'signup' ? 'Create account and verify email' : `Continue as ${mode === 'admin' ? 'agency admin' : 'applicant'}`}
+            {busy
+              ? 'Working…'
+              : tab === 'signup'
+              ? 'Create account'
+              : `Continue as ${mode === 'admin' ? 'agency admin' : 'applicant'}`}
           </button>
 
           <button
@@ -339,7 +413,29 @@ export default function Auth() {
 
           <div className="authdivider"><span>or</span></div>
 
-          {db.settings.googleClientId ? (
+          {fbOn ? (
+            <button
+              className="btn block"
+              style={{ height: 44 }}
+              onClick={async () => {
+                setErr('');
+                setBusy(true);
+                try {
+                  const acc = await fbGoogle();
+                  signIn(acc.name, acc.email, acc.role);
+                  navigate('/dashboard');
+                  toast(acc.role === 'admin' ? 'Signed in with Google as agency admin' : 'Signed in with Google');
+                } catch (e) {
+                  if ((e as Error).message !== 'redirecting') setErr(fbError(e));
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              data-testid="auth-google"
+            >
+              <Icon name="globe" size={16} /> Continue with Google
+            </button>
+          ) : db.settings.googleClientId ? (
             <div ref={gbtn} style={{ display: 'flex', justifyContent: 'center' }} />
           ) : (
             <button className="btn block" style={{ height: 44 }} onClick={() => setShowGoogleSetup(true)}>
