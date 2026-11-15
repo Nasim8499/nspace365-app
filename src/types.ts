@@ -105,6 +105,10 @@ export interface AppUser {
   createdAt: number;
   /** Password for manually created accounts (stored on this device only). */
   pw?: string;
+  /** false until the emailed sign-up link is opened; accounts without a link are legacy and count as verified. */
+  verified?: boolean;
+  /** one-time token carried by the verification link. */
+  token?: string;
 }
 
 export interface Settings {

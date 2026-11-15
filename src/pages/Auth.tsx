@@ -10,8 +10,22 @@ declare global {
   }
 }
 
+type Stage = 'form' | 'sent' | 'verified' | 'badlink';
+
+function readVerifyHash() {
+  const h = location.hash || '';
+  const at = h.indexOf('?');
+  if (!h.startsWith('#/verify') || at < 0) return null;
+  const q = new URLSearchParams(h.slice(at + 1));
+  const email = q.get('e') || '';
+  const token = q.get('t') || '';
+  if (!email) return null;
+  return { email, token };
+}
+
 export default function Auth() {
-  const { db, signIn, setSettings, toast, navigate } = useApp();
+  const { db, signIn, registerUser, verifyEmail, resendVerification, setSettings, toast, navigate } = useApp();
+  const [tab, setTab] = useState<'signin' | 'signup'>('signin');
   const [mode, setMode] = useState<'applicant' | 'admin'>('applicant');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -20,7 +34,39 @@ export default function Auth() {
   const [err, setErr] = useState('');
   const [showGoogleSetup, setShowGoogleSetup] = useState(false);
   const [clientId, setClientId] = useState(db.settings.googleClientId || '');
+  const [stage, setStage] = useState<Stage>(() => (readVerifyHash() ? 'badlink' : 'form'));
+  const [sentTo, setSentTo] = useState('');
+  const [sentToken, setSentToken] = useState('');
   const gbtn = useRef<HTMLDivElement>(null);
+
+  // the verification link comes back as #/verify?e=email&t=token
+  useEffect(() => {
+    const link = readVerifyHash();
+    if (!link) return;
+    const result = verifyEmail(link.email, link.token);
+    if (result === 'ok') {
+      setStage('verified');
+      setSentTo(link.email);
+      toast('Email verified — welcome in');
+      const t = setTimeout(() => navigate('/dashboard'), 1500);
+      return () => clearTimeout(t);
+    }
+    setStage('badlink');
+    setEmail(link.email);
+    setErr(
+      result === 'used'
+        ? 'That link has already been used. Sign in with your password instead.'
+        : result === 'unknown'
+        ? 'We could not find an account for that address on this device. Sign up again to get a fresh link.'
+        : 'That verification link is not valid any more.'
+    );
+  }, []);
+
+  const openMailbox = (mail: string, token: string) => {
+    setSentTo(mail);
+    setSentToken(token);
+    setStage('sent');
+  };
 
   const submit = () => {
     const mail = email.trim().toLowerCase();
@@ -35,13 +81,35 @@ export default function Auth() {
     if (!isDefaultAdmin && mode === 'admin' && code.trim().toUpperCase() !== (db.settings.adminCode || 'NSPACE-365')) {
       return setErr('Agency access code is wrong. Use the code from your agency admin.');
     }
-
     setErr('');
+
+    if (tab === 'signup') {
+      if (!name.trim()) return setErr('Add your name so we know who this account belongs to.');
+      const res = registerUser(name.trim(), mail, mode, password);
+      if (res.status === 'exists') return setErr('This email already has an account. Sign in instead.');
+      toast('Verification link ready');
+      return openMailbox(mail, res.token);
+    }
+
+    const known = db.users.find((u) => u.email.toLowerCase() === mail);
+    if (known && known.verified === false) {
+      const token = resendVerification(mail);
+      toast('Verify your email to finish signing in');
+      return openMailbox(mail, token);
+    }
+
     const role: 'applicant' | 'admin' = isDefaultAdmin ? 'admin' : mode;
     const ok = signIn(name.trim() || (isDefaultAdmin ? ADMIN_NAME : mail.split('@')[0]), mail, role, password);
     if (!ok) return setErr('This email already has an account with a different password.');
     navigate('/dashboard');
     toast(isDefaultAdmin ? 'Signed in as agency admin' : role === 'admin' ? 'Signed in as agency admin' : 'Signed in as applicant');
+  };
+
+  const resend = () => {
+    const token = resendVerification(sentTo);
+    if (!token) return setErr('That account no longer exists on this device.');
+    setSentToken(token);
+    toast('New verification link ready');
   };
 
   // Real Google Identity Services sign-in when a client id is configured.
@@ -77,14 +145,120 @@ export default function Auth() {
     }
   }, [db.settings.googleClientId]);
 
+  const link = `#/verify?e=${encodeURIComponent(sentTo)}&t=${encodeURIComponent(sentToken)}`;
+
+  if (stage === 'verified') {
+    return (
+      <div className="authwrap">
+        <div className="aurora" aria-hidden="true" />
+        <div className="glass authcard popin">
+          <div className="verifyring">
+            <Icon name="check" size={30} />
+          </div>
+          <h2 className="authtitle">Email verified</h2>
+          <p className="sub" style={{ margin: 0 }}>
+            {sentTo} is confirmed. Opening your workspace now.
+          </p>
+          <div className="loadbar">
+            <span />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'sent') {
+    return (
+      <div className="authwrap">
+        <div className="aurora" aria-hidden="true" />
+        <div className="glass authcard popin">
+          <Monogram size={56} />
+          <h2 className="authtitle">Check your inbox</h2>
+          <p className="sub" style={{ margin: 0 }}>
+            We sent a verification link to <b>{sentTo}</b>. Open it and your session starts automatically.
+          </p>
+
+          <div className="mailcard">
+            <div className="mailtop">
+              <div className="mailavatar">
+                <Icon name="doc" size={16} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <b>NsPaces Studio</b>
+                <div className="mailmeta">security@nspaces.studio · just now</div>
+              </div>
+              <span className="mailpill">Verify</span>
+            </div>
+            <div className="mailsubject">Verify your email address</div>
+            <p className="mailbody">
+              Tap the button below to confirm {sentTo} and open your NsPaces Studio workspace. The link works once and
+              expires after 24 hours.
+            </p>
+            <a className="btn dark block" href={link} data-testid="verify-open">
+              <Icon name="check" size={16} /> Verify my email
+            </a>
+          </div>
+
+          <div className="row" style={{ gap: 8, width: '100%', marginTop: 12 }}>
+            <button className="btn sm ghost" onClick={resend} data-testid="auth-resend">
+              <Icon name="refresh" size={13} /> Resend link
+            </button>
+            <button
+              className="btn sm ghost"
+              onClick={() => {
+                setStage('form');
+                setErr('');
+              }}
+            >
+              Change email
+            </button>
+          </div>
+          <div className="hint" style={{ textAlign: 'center' }}>
+            Mail preview shown here because no SMTP key is connected yet. Connect one and the same link is delivered to
+            the real inbox.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="authwrap">
+      <div className="aurora" aria-hidden="true" />
       <div className="glass authcard">
         <Monogram size={68} />
         <Wordmark size={28} />
         <p className="sub" style={{ margin: 0 }}>
           Visa cases, documents and agent progress — applicants see their own file, the agency sees everything.
         </p>
+
+        <div className="segctl" role="tablist" aria-label="Account">
+          <button
+            role="tab"
+            aria-selected={tab === 'signin'}
+            className={`seg${tab === 'signin' ? ' on' : ''}`}
+            onClick={() => {
+              setTab('signin');
+              setErr('');
+            }}
+            data-testid="auth-tab-signin"
+          >
+            Sign in
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'signup'}
+            className={`seg${tab === 'signup' ? ' on' : ''}`}
+            onClick={() => {
+              setTab('signup');
+              setName('');
+              setErr('');
+            }}
+            data-testid="auth-tab-signup"
+          >
+            Create account
+          </button>
+        </div>
 
         <div className="authtabs">
           <button className={`authtab${mode === 'applicant' ? ' on' : ''}`} onClick={() => setMode('applicant')}>
@@ -96,14 +270,16 @@ export default function Auth() {
         </div>
 
         <div style={{ width: '100%' }}>
-          <input
-            className="input"
-            placeholder="Full name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={{ marginBottom: 8 }}
-            data-testid="auth-name"
-          />
+          {(tab === 'signup' || true) && (
+            <input
+              className="input"
+              placeholder={tab === 'signup' ? 'Full name' : 'Full name (optional)'}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={{ marginBottom: 8 }}
+              data-testid="auth-name"
+            />
+          )}
           <input
             className="input"
             placeholder="Email"
@@ -136,12 +312,14 @@ export default function Auth() {
           )}
           {err && <div className="autherr">{err}</div>}
           <button className="btn dark block" onClick={submit} style={{ height: 44 }} data-testid="auth-submit">
-            <Icon name="arrowRight" size={16} /> Continue as {mode === 'admin' ? 'agency admin' : 'applicant'}
+            <Icon name="arrowRight" size={16} />
+            {tab === 'signup' ? 'Create account and verify email' : `Continue as ${mode === 'admin' ? 'agency admin' : 'applicant'}`}
           </button>
 
           <button
             className="authquick"
             onClick={() => {
+              setTab('signin');
               setMode('admin');
               setEmail(ADMIN_EMAIL);
               setName((n) => n || ADMIN_NAME);

@@ -12,6 +12,7 @@ import { emptyApplicant, token } from './dossier';
 import type { VisaCase } from './dossier';
 import type {
   Agent,
+  AppUser,
   Artifact,
   Attachment,
   Automation,
@@ -28,6 +29,11 @@ import type { ChatMessage } from './llm';
 import { clip, nextRunFor, uid } from './util';
 
 const KEY = 'nspace.db.v3';
+
+/** url-safe one-time token for the email verification link */
+function makeToken(email: string, role: string, at: number) {
+  return btoa(`${email}|${role}|${at}`).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 function load(): DB {
   try {
@@ -77,6 +83,9 @@ interface Ctx {
   toast: (text: string) => void;
   setSettings: (patch: Partial<Settings>) => void;
   signIn: (name: string, email: string, role?: 'applicant' | 'admin', pw?: string) => boolean;
+  registerUser: (name: string, email: string, role: 'applicant' | 'admin', pw: string) => { token: string; status: 'ok' | 'exists' };
+  verifyEmail: (email: string, token: string) => 'ok' | 'used' | 'bad' | 'unknown';
+  resendVerification: (email: string) => string;
   signOut: () => void;
   newConversation: (agentId?: string) => string;
   deleteConversation: (id: string) => void;
@@ -226,6 +235,61 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
     });
     return ok;
+  }, []);
+
+  /** step one of sign-up: create the account unverified and hand back its email link token */
+  const registerUser = useCallback(
+    (name: string, email: string, role: 'applicant' | 'admin', pw: string) => {
+      const mail = (email || '').trim().toLowerCase();
+      const existing = dbRef.current.users.find((u) => u.email.toLowerCase() === mail);
+      if (existing) return { token: '', status: 'exists' as const };
+      const at = Date.now();
+      const token = makeToken(mail, role, at);
+      const user: AppUser = {
+        email: mail,
+        name: name || mail.split('@')[0],
+        role,
+        createdAt: at,
+        pw,
+        verified: false,
+        token,
+      };
+      setDB((d) => ({ ...d, users: [...d.users, user] }));
+      return { token, status: 'ok' as const };
+    },
+    []
+  );
+
+  /** step two: the link was opened — mark verified and open the session */
+  const verifyEmail = useCallback((email: string, token: string) => {
+    const mail = (email || '').trim().toLowerCase();
+    const u = dbRef.current.users.find((x) => x.email.toLowerCase() === mail);
+    if (!u) return 'unknown' as const;
+    if (u.verified) return 'used' as const;
+    if (u.token && token && u.token !== token) return 'bad' as const;
+    setDB((d) => ({
+      ...d,
+      users: d.users.map((x) => (x.email === u.email ? { ...x, verified: true, token: '' } : x)),
+      settings: {
+        ...d.settings,
+        signedIn: true,
+        role: u.role,
+        name: u.name,
+        email: u.email,
+        handle: (u.email.split('@')[0] || 'you').toLowerCase().replace(/[^a-z0-9._-]/g, ''),
+      },
+    }));
+    return 'ok' as const;
+  }, []);
+
+  /** a fresh link for the same address (old one stops working) */
+  const resendVerification = useCallback((email: string) => {
+    const mail = (email || '').trim().toLowerCase();
+    const u = dbRef.current.users.find((x) => x.email.toLowerCase() === mail);
+    if (!u) return '';
+    const token = makeToken(u.email, u.role, Date.now());
+    setDB((d) => ({ ...d, users: d.users.map((x) => (x.email === u.email ? { ...x, token, verified: false } : x)) }));
+    return token;
   }, []);
 
   const signOut = useCallback(() => {
@@ -739,6 +803,9 @@ You are ${agent.name} inside NsPace, a personal AI workspace. Answer in the user
       toast,
       setSettings,
       signIn,
+      registerUser,
+      verifyEmail,
+      resendVerification,
       signOut,
       newConversation,
       deleteConversation,
@@ -774,6 +841,9 @@ You are ${agent.name} inside NsPace, a personal AI workspace. Answer in the user
       toast,
       setSettings,
       signIn,
+      registerUser,
+      verifyEmail,
+      resendVerification,
       signOut,
       newConversation,
       deleteConversation,
