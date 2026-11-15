@@ -2809,3 +2809,38 @@ html[data-theme='dark'] .livescreen { background: #f7f8fa; }
   .teamgrid { grid-template-columns: repeat(auto-fill, minmax(min(232px, 100%), 1fr)); }
   .automgrid { grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr)); }
 }
+
+/* ---------------- page transitions: real motion, reduced-motion safe ---------------- */
+@keyframes pageRise {
+  from { opacity: 0; transform: translateY(10px) scale(.992); filter: blur(2px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes cardRise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.page-anim {
+  animation: pageRise .46s cubic-bezier(.16,.84,.3,1) both;
+  will-change: opacity, transform;
+}
+.page-anim > .page > .pagebody > *,
+.page-anim > .chatwrap > aside,
+.page-anim > .chatwrap > section {
+  animation: cardRise .5s cubic-bezier(.16,.84,.3,1) both;
+}
+.page-anim > .page > .pagebody > *:nth-child(2) { animation-delay: .05s; }
+.page-anim > .page > .pagebody > *:nth-child(3) { animation-delay: .1s; }
+.page-anim > .page > .pagebody > *:nth-child(4) { animation-delay: .14s; }
+.page-anim > .page > .pagebody > *:nth-child(n + 5) { animation-delay: .18s; }
+.page-anim > .chatwrap > section { animation-delay: .06s; }
+
+/* soft press feedback on every navigation target */
+.tabbtn, .navbtn, .plusitem, .pill, .btn { -webkit-tap-highlight-color: transparent; }
+.tabbtn:active, .navbtn:active { transform: scale(.94); }
+.tabbtn, .navbtn { transition: transform .14s ease, color .18s ease, background .18s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-anim, .page-anim > .page > .pagebody > *, .page-anim > .chatwrap > * {
+    animation: none !important;
+  }
+}

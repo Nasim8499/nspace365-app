@@ -113,6 +113,7 @@ function parseHash(): string {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [db, setDB] = useState<DB>(load);
+  const fromPeer = useRef(false);
   const [route, setRoute] = useState<string>(parseHash);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [streamingIds, setStreamingIds] = useState<string[]>([]);
@@ -124,8 +125,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   dbRef.current = db;
 
   useEffect(() => {
+    // a change that arrived from another tab/device must not be echoed back
+    if (fromPeer.current) {
+      fromPeer.current = false;
+      return;
+    }
     localStorage.setItem(KEY, JSON.stringify(db));
   }, [db]);
+
+  // real-time sync: a change made in another tab or window lands here instantly
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== KEY || !e.newValue) return;
+      try {
+        const next = JSON.parse(e.newValue) as DB;
+        if (!next || !next.settings || !Array.isArray(next.agents)) return;
+        fromPeer.current = true;
+        setDB(next);
+        setRunLog((l) => ['Synced a change from another tab', ...l].slice(0, 60));
+      } catch {
+        /* ignore a half-written payload */
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = db.settings.theme;
